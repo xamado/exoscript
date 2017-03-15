@@ -1,0 +1,10 @@
+int test(int a, int b)
+{
+	int c = a + b;
+	print c;
+}
+
+int main()
+{
+	test(50, 100);
+}
