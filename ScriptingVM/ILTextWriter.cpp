@@ -153,5 +153,5 @@ void ILTextWriter::Open(const std::string& name)
 
 void ILTextWriter::Close()
 {
-
+	fs.close();
 }
