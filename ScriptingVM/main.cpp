@@ -49,9 +49,9 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	ILTextWriter ilWriter;
+	ILTextWriter ilWriter(code);
 	ilWriter.Open("test.exo.il");
-	ilWriter.WriteIL(code);
+	ilWriter.WriteIL();
 	ilWriter.Close();
 
 	VM* vm = new VM();

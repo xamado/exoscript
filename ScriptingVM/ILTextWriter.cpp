@@ -4,40 +4,35 @@
 #include <fstream>
 #include <string>
 
-ILTextWriter::ILTextWriter()
+ILTextWriter::ILTextWriter(ILByteCode* code)
 {
-}
+	_byteCode = code;
 
+	_ptr = code->GetByteCode();
+	_end = _ptr + code->GetByteCodeLength();
+}
 
 ILTextWriter::~ILTextWriter()
 {
 }
 
-void ILTextWriter::WriteIL(ILByteCode* code)
+void ILTextWriter::WriteIL()
 {
-	const uint8_t* data = code->GetByteCode();
-	uint32_t len = code->GetByteCodeLength();
-	const uint8_t* end = data + len;
-
-	uint8_t* ptr = const_cast<uint8_t*>(data);
-
-	while(ptr < end)
+	while(_ptr < _end)
 	{
-		uint8_t instruction;
-		ptr = ReadByte(ptr, &instruction);
+		uint8_t instruction = ReadByte();
 
 		switch (instruction)
 		{
 			case OP_METADATA:
 			{
 				// read metadata type
-				uint8_t metaType = 0;
-				ptr = ReadByte(ptr, &metaType);
+				uint8_t metaType = ReadByte();
 
 				switch (metaType)
 				{
 					case META_FUNCTION:
-						ptr = this->WriteMetadataFunction(ptr);
+						this->WriteMetadataFunction();
 						break;
 
 					default:
@@ -50,8 +45,7 @@ void ILTextWriter::WriteIL(ILByteCode* code)
 
 			case OP_STACK_LOAD_INT:
 			{
-				uint32_t val = 0;
-				ptr = ReadInt(ptr, &val);
+				uint32_t val = ReadInt();
 
 				this->WriteOpCode(instruction, std::to_string(val));
 
@@ -60,8 +54,7 @@ void ILTextWriter::WriteIL(ILByteCode* code)
 
 			case OP_LOCAL_STORE:
 			{
-				uint8_t val = 0;
-				ptr = ReadByte(ptr, &val);
+				uint8_t val = ReadByte();
 
 				this->WriteOpCode(instruction, std::to_string(val));
 
@@ -69,8 +62,7 @@ void ILTextWriter::WriteIL(ILByteCode* code)
 			}
 			case OP_LOCAL_LOAD:
 			{
-				uint8_t val = 0;
-				ptr = ReadByte(ptr, &val);
+				uint8_t val = ReadByte();
 
 				this->WriteOpCode(instruction, std::to_string(val));
 
@@ -85,73 +77,73 @@ void ILTextWriter::WriteIL(ILByteCode* code)
 			case OP_DIVIDE:
 			case OP_PRINT:
 				this->WriteOpCode(instruction);
+
 				break;
 
 			default:
-				fs << "<UNKNOWN>" + std::string("\n");
+				_fs << "<UNKNOWN>" + std::string("\n");
 				break;
 		}
 	}
 
-	fs.close();
+	_fs.close();
 }
 
-uint8_t* ILTextWriter::ReadByte(uint8_t* ptr, uint8_t* byte)
+uint8_t ILTextWriter::ReadByte()
 {
-	*byte = *ptr;
-	return ptr + 1;
+	uint8_t b = *_ptr;
+	_ptr++;
+
+	return b;
 }
 
-uint8_t* ILTextWriter::ReadInt(uint8_t* ptr, uint32_t* val)
+uint32_t ILTextWriter::ReadInt()
 {
-	*val = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
+	uint32_t v = (_ptr[0] << 24) | (_ptr[1] << 16) | (_ptr[2] << 8) | _ptr[3];
+	_ptr += 4;
 
-	return ptr + 4;
+	return v;
 }
 
-uint8_t* ILTextWriter::WriteMetadataFunction(uint8_t* ptr)
+void ILTextWriter::WriteMetadataFunction()
 {
-	uint8_t nameLen = 0;
-	ptr = ReadByte(ptr, &nameLen);
+	uint8_t nameLen = ReadByte();
 
 	char* name = (char*)malloc(sizeof(char) * (nameLen + 1));
 	name[nameLen] = '\0';
 
 	for (uint32_t i = 0; i < nameLen; i++)
 	{
-		uint8_t c = 0;
-		ptr = ReadByte(ptr, &c);
+		uint8_t c = ReadByte();
 
 		name[i] = c;
 	}
 
-	fs << "function" << " " << name << ":" << "\n";
+	_fs << "function" << " " << name << ":" << "\n";
 
 	free(name);
-
-	return ptr;
 }
 
 void ILTextWriter::WriteOpCode(uint8_t op)
 {
 	std::string opCodeName = gInstructionReadableName[op];
 	
-	fs << opCodeName << "\n";
+	_fs << opCodeName << "\n";
 }
 
 void ILTextWriter::WriteOpCode(uint8_t op, const std::string& data)
 {
 	std::string opCodeName = gInstructionReadableName[op];
 
-	fs << opCodeName << "\t" << data << "\n";
+	_fs << opCodeName << "\t" << data << "\n";
 }
 
 void ILTextWriter::Open(const std::string& name)
 {
-	fs.open(name);
+	_fs.open(name);
 }
 
 void ILTextWriter::Close()
 {
-	fs.close();
+	_fs.close();
 }
