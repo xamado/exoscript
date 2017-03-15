@@ -134,58 +134,14 @@ uint8_t* ILTextWriter::WriteMetadataFunction(uint8_t* ptr)
 
 void ILTextWriter::WriteOpCode(uint8_t op)
 {
-	std::string opCodeName;
-
-	switch (op)
-	{
-		case OP_HALT:
-			opCodeName = "halt";
-			break;
-		case OP_JUMP:
-			opCodeName = "jump";
-			break;
-		case OP_ADD:
-			opCodeName = "add";
-			break;	
-		case OP_SUBSTRACT:
-			opCodeName = "sub";
-			break;
-		case OP_MULTIPLY:
-			opCodeName = "mul";
-			break;
-		case OP_DIVIDE:
-			opCodeName = "div";
-			break;
-		case OP_LOCAL_STORE:
-			opCodeName = "locst";
-			break;
-		case OP_LOCAL_LOAD:
-			opCodeName = "locld";
-			break;
-		case OP_PRINT:
-			opCodeName = "print";
-			break;
-	}
-
+	std::string opCodeName = gInstructionReadableName[op];
+	
 	fs << opCodeName << "\n";
 }
 
 void ILTextWriter::WriteOpCode(uint8_t op, const std::string& data)
 {
-	std::string opCodeName;
-
-	switch (op)
-	{
-		case OP_LOCAL_STORE:
-			opCodeName = "locst";
-			break;
-		case OP_LOCAL_LOAD:
-			opCodeName = "locld";
-			break;
-		case OP_STACK_LOAD_INT:
-			opCodeName = "sloadi";
-			break;
-	}
+	std::string opCodeName = gInstructionReadableName[op];
 
 	fs << opCodeName << "\t" << data << "\n";
 }

@@ -1,4 +1,23 @@
 #include "ILByteCode.h"
+#include <map>
+#include "ILInstructionSet.h"
+
+std::map<uint8_t, char*> gInstructionReadableName = {
+	{ OP_HALT, "halt" },
+	{ OP_JUMP, "jump" },
+	{ OP_ADD, "add" },
+	{ OP_SUBSTRACT, "sub" },
+	{ OP_MULTIPLY, "mul" },
+	{ OP_DIVIDE, "div" },
+	{ OP_JUMP, "jump" },
+	{ OP_JUMP, "jump" },
+	{ OP_LOCAL_LOAD, "locld" },
+	{ OP_LOCAL_STORE, "locst" },
+	{ OP_PRINT, "print" },
+	{ OP_LOCAL_STORE, "locst" },
+	{ OP_LOCAL_LOAD, "locld" },
+	{ OP_STACK_LOAD_INT, "sloadi" }
+};
 
 ILByteCode::ILByteCode()
 {

@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 
 enum InstructionSet
 {
@@ -24,3 +25,5 @@ enum MetadataType
 {
 	META_FUNCTION = 0x1,
 };
+
+extern std::map<uint8_t, char*> gInstructionReadableName;
