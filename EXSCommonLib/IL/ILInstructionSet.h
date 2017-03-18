@@ -9,6 +9,7 @@ enum InstructionSet
 	OP_METADATA,
 
 	OP_JUMP = 0x10,
+	OP_RETURN,
 
 	OP_STACK_LOAD_INT = 0x20,
 
@@ -18,12 +19,13 @@ enum InstructionSet
 	OP_ADD = 0x40,
 	OP_SUBSTRACT,
 	OP_MULTIPLY,
-	OP_DIVIDE
+	OP_DIVIDE,	
 };
 
 enum MetadataType
 {
-	META_FUNCTION = 0x1,
+	META_HEADER = 0x1,
+	META_FUNCTION = 0x2,
 };
 
 extern std::map<uint8_t, char*> gInstructionReadableName;

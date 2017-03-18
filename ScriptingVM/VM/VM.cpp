@@ -30,13 +30,29 @@ void VM::ExecuteByteCode(const ILByteCode* const bytecode)
 	uint8_t* start = ptr;
 	uint8_t* end = ptr + bytecode->GetByteCodeLength();
 
+	// Read the header
+	uint8_t val = 0;
+	ptr = ReadByte(ptr, &val);
+	ASSERT_FATAL(val == InstructionSet::OP_METADATA, "Header was invalid");
+
+	ptr = ReadByte(ptr, &val);
+	ASSERT_FATAL(val == MetadataType::META_HEADER, "Header was invalid");
+
+	// Push the return location to be the next byte, which is always a halt
+	Push(3);
+
+	// Jump to the entry point
+	ptr = ReadByte(ptr, &val);
+	ptr = start + val;
+
 	while(ptr < end)
 	{
+		uint8_t offset = (ptr - start);
 		uint8_t instruction = 0;
 		ptr = ReadByte(ptr, &instruction);
 
 #ifdef DEBUG_INSTRUCTIONS
-		printf("%02X\n", instruction);
+		printf("%d: %02X\n", offset, instruction);
 #endif
 
 		switch(instruction)
@@ -51,13 +67,22 @@ void VM::ExecuteByteCode(const ILByteCode* const bytecode)
 
 			case OP_JUMP:
 			{
-				uint32_t offset = Pop();
+				uint8_t offset = 0;
+				ptr = ReadByte(ptr, &offset);
 
 				ptr = start + offset;
 
 				break;
 			}
 
+			case OP_RETURN:
+			{
+				uint8_t offset = Pop();
+
+				ptr = start + offset;
+				
+				break;
+			}
 			case OP_STACK_LOAD_INT:
 			{
 				uint32_t val = 0;

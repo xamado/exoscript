@@ -68,6 +68,8 @@ bool ASTFunctionParametersNode::GenerateCode(BlockContext& context, ILByteCode* 
 
 	for(auto i : _variables)
 	{
+		context.AddLocal(i->GetNameIdentifier().GetName(), i->GetTypeIdentifier().GetName());
+
 		// this could be backwards
 		bytecode->WriteByte(InstructionSet::OP_LOCAL_STORE);
 		bytecode->WriteByte(idx);
@@ -112,6 +114,10 @@ bool ASTFunctionDeclarationNode::GenerateCode(BlockContext& context, ILByteCode*
 	bytecode->WriteByte(_name.length());
 	bytecode->WriteString(_name);
 
+	// Read the return address
+	bytecode->WriteByte(InstructionSet::OP_LOCAL_STORE);
+	bytecode->WriteByte(255);
+
 	// Read the parameters from the stack
 	bool status;
 	status = _parameters.GenerateCode(context, bytecode);
@@ -127,7 +133,17 @@ bool ASTFunctionDeclarationNode::GenerateCode(BlockContext& context, ILByteCode*
 		return false;
 	}
 
-	bytecode->WriteByte(InstructionSet::OP_JUMP);
+	bytecode->WriteByte(InstructionSet::OP_LOCAL_LOAD);
+	bytecode->WriteByte(255);
+
+	if(_name == "main")
+	{
+		bytecode->WriteByte(InstructionSet::OP_HALT);
+	}
+	else
+	{
+		bytecode->WriteByte(InstructionSet::OP_RETURN);
+	}
 
 	return true;
 }
@@ -142,12 +158,11 @@ bool ASTFunctionCallNode::GenerateCode(BlockContext& context, ILByteCode* byteco
 		return false;
 	}
 
-	uint32_t jumpLocation = func->GetOffset();
-	uint32_t currOffset = bytecode->GetByteCodeLength();
+	uint8_t jumpLocation = func->GetOffset();
 
 	// Push the jump-back location unto the stack
-	bytecode->WriteByte(InstructionSet::OP_STACK_LOAD_INT);
-	bytecode->WriteInt(currOffset + 11);
+	//bytecode->WriteByte(InstructionSet::OP_STACK_LOAD_INT);
+	//bytecode->WriteInt(currOffset + 3);
 	
 	// Push the arguments to the stack
 	bool status = _arguments.GenerateCode(context, bytecode);
@@ -156,12 +171,14 @@ bool ASTFunctionCallNode::GenerateCode(BlockContext& context, ILByteCode* byteco
 		return false;
 	}
 
-	// Push the offset for the function jump
+	// Push the jump-back location unto the stack
 	bytecode->WriteByte(InstructionSet::OP_STACK_LOAD_INT);
-	bytecode->WriteInt(jumpLocation);
+	uint8_t currOffset = bytecode->GetByteCodeLength();
+	bytecode->WriteInt(currOffset + 6);
 
 	// Jump to offset
 	bytecode->WriteByte(InstructionSet::OP_JUMP);
+	bytecode->WriteByte(jumpLocation);
 
 	return true;
 }

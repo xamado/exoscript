@@ -9,6 +9,7 @@ ILTextWriter::ILTextWriter(ILByteCode* code)
 	_byteCode = code;
 
 	_ptr = code->GetByteCode();
+	_start = _ptr;
 	_end = _ptr + code->GetByteCodeLength();
 }
 
@@ -20,6 +21,8 @@ void ILTextWriter::WriteIL()
 {
 	while(_ptr < _end)
 	{
+		this->WriteLineNumber();
+
 		uint8_t instruction = ReadByte();
 
 		switch (instruction)
@@ -31,10 +34,15 @@ void ILTextWriter::WriteIL()
 
 				switch (metaType)
 				{
+					case META_HEADER:
+						this->WriteMetadataHeader();
+						break;
 					case META_FUNCTION:
 						this->WriteMetadataFunction();
-						break;
 
+						_indent++;
+
+						break;			
 					default:
 						printf("Invalid metadata type read... this is bad!\n");
 						break;
@@ -69,8 +77,21 @@ void ILTextWriter::WriteIL()
 				break;
 			}
 
-			case OP_HALT:
 			case OP_JUMP:
+			{
+				uint8_t address = ReadByte();
+				
+				this->WriteOpCode(instruction, std::to_string(address));
+
+				break;
+			}
+
+			case OP_RETURN:
+				this->WriteOpCode(instruction);
+				_indent--;
+				break;
+
+			case OP_HALT:
 			case OP_ADD:
 			case OP_SUBSTRACT:
 			case OP_MULTIPLY:
@@ -105,6 +126,20 @@ uint32_t ILTextWriter::ReadInt()
 	return v;
 }
 
+void ILTextWriter::WriteLineNumber()
+{
+	_fs << (_ptr - _start) << ": ";
+}
+
+void ILTextWriter::WriteMetadataHeader()
+{
+	uint8_t entryPointOffset = ReadByte();
+
+	_fs << "header" << ":" << "\n";
+
+	_fs << "\t" << "entry point: " << std::to_string(entryPointOffset) << "\n";
+}
+
 void ILTextWriter::WriteMetadataFunction()
 {
 	uint8_t nameLen = ReadByte();
@@ -128,12 +163,18 @@ void ILTextWriter::WriteOpCode(uint8_t op)
 {
 	std::string opCodeName = gInstructionReadableName[op];
 	
+	for (uint32_t i = 0; i < _indent; ++i)
+		_fs << "\t";
+
 	_fs << opCodeName << "\n";
 }
 
 void ILTextWriter::WriteOpCode(uint8_t op, const std::string& data)
 {
 	std::string opCodeName = gInstructionReadableName[op];
+
+	for (uint32_t i = 0; i < _indent; ++i)
+		_fs << "\t";
 
 	_fs << opCodeName << "\t" << data << "\n";
 }

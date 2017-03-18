@@ -7,4 +7,8 @@ int test(int a, int b)
 int main()
 {
 	test(50, 100);
+
+	test(2, 2);
+
+	print c;
 }

@@ -16,7 +16,8 @@ std::map<uint8_t, char*> gInstructionReadableName = {
 	{ OP_PRINT, "print" },
 	{ OP_LOCAL_STORE, "locst" },
 	{ OP_LOCAL_LOAD, "locld" },
-	{ OP_STACK_LOAD_INT, "sloadi" }
+	{ OP_STACK_LOAD_INT, "sloadi" },
+	{ OP_RETURN, "return" }
 };
 
 ILByteCode::ILByteCode()
