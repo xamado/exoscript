@@ -21,7 +21,7 @@ ILByteCode* ILGenerator::ParseAST(ASTNode* node) const
 	bytecode->WriteByte(MetadataType::META_HEADER);
 	bytecode->WriteByte(0); // entry point offset
 		
-	BlockContext globalContext;
+	BlockContext globalContext(nullptr);
 	bool status = node->GenerateCode(globalContext, bytecode);
 
 	if(!status)
@@ -34,15 +34,8 @@ ILByteCode* ILGenerator::ParseAST(ASTNode* node) const
 		return nullptr;
 	}
 
-	//uint32_t entryPointOffset = globalContext.GetLabel("main");
+	// Modify the entry point now that we know the offset
 	const BlockContext::Function* const entryPoint = globalContext.GetFunction("main");
-	//uint32_t entryPointOffset = entryPoint->GetOffset();
-
-	/*bytecode->_data[2] = ((entryPointOffset >> 24) & 0xFF);
-	bytecode->_data[3] = ((entryPointOffset >> 16) & 0xFF);
-	bytecode->_data[4] = ((entryPointOffset >> 8) & 0xFF);
-	bytecode->_data[5] = ((entryPointOffset) & 0xFF);*/
-
 	uint8_t entryPointOffset = entryPoint->GetOffset();
 	bytecode->_data[2] = entryPointOffset;
 

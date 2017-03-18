@@ -14,7 +14,11 @@ bool ASTExpressionStatementNode::GenerateCode(BlockContext& context, ILByteCode*
 
 bool ASTIdentifierNode::GenerateCode(BlockContext& context, ILByteCode* bytecode) const
 {
-	uint8_t localIdx = context.GetLocal(_name);
+	uint8_t localIdx = 0;
+	if(!context.GetLocal(_name, &localIdx))
+	{
+		return false;
+	}
 
 	// Push the value at local #localIdx into the stack
 	bytecode->WriteByte(InstructionSet::OP_LOCAL_LOAD);
@@ -53,7 +57,11 @@ bool ASTVariableDeclarationNode::GenerateCode(BlockContext& context, ILByteCode*
 		}
 
 		// Store the top of the stack into local #localIdx
-		uint8_t localIdx = context.GetLocal(_id.GetName());
+		uint8_t localIdx = 0;
+		if(!context.GetLocal(_id.GetName(), &localIdx))
+		{
+			return false;
+		}
 
 		bytecode->WriteByte(InstructionSet::OP_LOCAL_STORE);
 		bytecode->WriteByte(localIdx);
@@ -95,7 +103,7 @@ bool ASTFunctionArgumentsNode::GenerateCode(BlockContext& context, ILByteCode* b
 	return true;
 }
 
-bool ASTFunctionDeclarationNode::GenerateCode(BlockContext& context, ILByteCode* bytecode) const
+bool ASTFunctionDeclarationNode::GenerateCode(BlockContext& parentContext, ILByteCode* bytecode) const
 {
 	// Add a function declaration to the execution context
 	std::vector<BlockContext::Type> parameterTypes;
@@ -106,7 +114,10 @@ bool ASTFunctionDeclarationNode::GenerateCode(BlockContext& context, ILByteCode*
 	}
 
 	uint32_t offset = bytecode->GetByteCodeLength();
-	context.AddFunctionDeclaration(BlockContext::Function(_name, parameterTypes, offset));
+	parentContext.AddFunctionDeclaration(BlockContext::Function(_name, parameterTypes, offset));
+
+	// Push a new context
+	BlockContext& context = parentContext.PushContext();
 
 	// Write metadata about our function
 	bytecode->WriteByte(OP_METADATA);
@@ -136,6 +147,7 @@ bool ASTFunctionDeclarationNode::GenerateCode(BlockContext& context, ILByteCode*
 	bytecode->WriteByte(InstructionSet::OP_LOCAL_LOAD);
 	bytecode->WriteByte(255);
 
+	// In the case of the entry point let's use a HALT at the end instead of a return
 	if(_name == "main")
 	{
 		bytecode->WriteByte(InstructionSet::OP_HALT);
@@ -191,7 +203,12 @@ bool ASTAssignmentNode::GenerateCode(BlockContext& context, ILByteCode* bytecode
 		return false;
 	}
 
-	uint8_t localIdx = context.GetLocal(_lhs.GetName());
+	uint8_t localIdx = 0;
+	if(!context.GetLocal(_lhs.GetName(), &localIdx))
+	{
+		return false;
+	}
+
 	bytecode->WriteByte(InstructionSet::OP_LOCAL_STORE);
 	bytecode->WriteByte(localIdx);
 

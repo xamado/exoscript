@@ -39,8 +39,12 @@ public:
 	};
 
 public:
+	BlockContext(BlockContext* parentContext);
+
+	BlockContext& PushContext();
+	
 	void AddLocal(const std::string& id, const std::string& type);
-	uint8_t GetLocal(const std::string& name);
+	bool GetLocal(const std::string& name, uint8_t* const val);
 
 	void AddLabel(const std::string& name, uint32_t offset);
 	uint32_t GetLabel(const std::string& name);
@@ -52,4 +56,7 @@ private:
 	std::vector<std::string> _locals;
 	std::map<std::string, uint32_t> _offsets;
 	std::map<std::string, BlockContext::Function> _functions;
+
+	std::vector<BlockContext> _subContexts;
+	BlockContext* _parentContext;
 };
