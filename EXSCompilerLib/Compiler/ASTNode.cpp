@@ -12,17 +12,21 @@ bool ASTExpressionStatementNode::GenerateCode(BlockContext& context, ILByteCode*
 	return true;
 }
 
+// TODO: Let's add a step previous to generate code to parse all the syntax and contexts...
+// the identifier should be able to know what type it is for generating the code...
+// otherwise i need to do lots of ugly calls to figure out the type
+
 bool ASTIdentifierNode::GenerateCode(BlockContext& context, ILByteCode* bytecode) const
 {
-	uint8_t localIdx = 0;
-	if(!context.GetLocal(_name, &localIdx))
+	const BlockContext::ContextVariable* var = context.GetVariable(_name);
+	if(var == nullptr)
 	{
 		return false;
 	}
 
 	// Push the value at local #localIdx into the stack
 	bytecode->WriteByte(InstructionSet::OP_LOCAL_LOAD);
-	bytecode->WriteByte(localIdx);
+	bytecode->WriteByte(var->GetIndex());
 
 	return true;
 }
@@ -46,7 +50,15 @@ bool ASTBlockNode::GenerateCode(BlockContext& context, ILByteCode* bytecode) con
 
 bool ASTVariableDeclarationNode::GenerateCode(BlockContext& context, ILByteCode* bytecode) const
 {
-	context.AddLocal(_id.GetName(), _type.GetName());
+	BlockContext::Type type = context.GetType(_type.GetName());
+	if(type == BlockContext::Type::Invalid)
+	{
+		printf("Invalid type: %s\n", _type.GetName().c_str());
+		return false;
+	}
+
+	BlockContext::ContextVariable v = BlockContext::ContextVariable(_id.GetName(), type);
+	context.AddVariable(v);
 
 	if (_rhs != nullptr)
 	{
@@ -57,12 +69,13 @@ bool ASTVariableDeclarationNode::GenerateCode(BlockContext& context, ILByteCode*
 		}
 
 		// Store the top of the stack into local #localIdx
-		uint8_t localIdx = 0;
-		if(!context.GetLocal(_id.GetName(), &localIdx))
+		const BlockContext::ContextVariable* var = context.GetVariable(_id.GetName());
+		if(var == nullptr)
 		{
 			return false;
 		}
 
+		uint8_t localIdx = var->GetIndex();
 		bytecode->WriteByte(InstructionSet::OP_LOCAL_STORE);
 		bytecode->WriteByte(localIdx);
 	}
@@ -76,7 +89,8 @@ bool ASTFunctionParametersNode::GenerateCode(BlockContext& context, ILByteCode* 
 
 	for(auto i : _variables)
 	{
-		context.AddLocal(i->GetNameIdentifier().GetName(), i->GetTypeIdentifier().GetName());
+		BlockContext::ContextVariable var = BlockContext::ContextVariable(i->GetNameIdentifier().GetName(), context.GetType(i->GetTypeIdentifier().GetName()));
+		context.AddVariable(var);
 
 		// this could be backwards
 		bytecode->WriteByte(InstructionSet::OP_LOCAL_STORE);
@@ -110,7 +124,8 @@ bool ASTFunctionDeclarationNode::GenerateCode(BlockContext& parentContext, ILByt
 	for (auto i : _parameters.GetParameters())
 	{
 		const ASTIdentifierNode& typeIdentifier = i->GetTypeIdentifier();
-		parameterTypes.push_back(BlockContext::Type::Integer); // TEST
+		const BlockContext::Type type = parentContext.GetType(typeIdentifier.GetName());
+		parameterTypes.push_back(type);
 	}
 
 	uint32_t offset = bytecode->GetByteCodeLength();
@@ -203,12 +218,15 @@ bool ASTAssignmentNode::GenerateCode(BlockContext& context, ILByteCode* bytecode
 		return false;
 	}
 
-	uint8_t localIdx = 0;
-	if(!context.GetLocal(_lhs.GetName(), &localIdx))
+	context.GetVariable(_lhs.GetName());
+
+	const BlockContext::ContextVariable* var = context.GetVariable(_lhs.GetName());
+	if(var == nullptr)
 	{
 		return false;
 	}
 
+	uint8_t localIdx = var->GetIndex();
 	bytecode->WriteByte(InstructionSet::OP_LOCAL_STORE);
 	bytecode->WriteByte(localIdx);
 
@@ -234,19 +252,47 @@ bool ASTBinaryOperatorNode::GenerateCode(BlockContext& context, ILByteCode* byte
 	switch (op)
 	{
 	case '+':
-		bytecode->WriteByte(InstructionSet::OP_ADD);
+		if (lhs.GetType(context) == BlockContext::Type::Integer)
+		{
+			bytecode->WriteByte(InstructionSet::OP_ADD_INT);
+		}
+		else
+		{
+			bytecode->WriteByte(InstructionSet::OP_ADD_FLOAT);
+		}
 		break;
 
 	case '-':
-		bytecode->WriteByte(InstructionSet::OP_SUBSTRACT);
+		if (lhs.GetType(context) == BlockContext::Type::Integer)
+		{
+			bytecode->WriteByte(InstructionSet::OP_SUBSTRACT_INT);
+		}
+		else
+		{
+			bytecode->WriteByte(InstructionSet::OP_SUBSTRACT_FLOAT);
+		}
 		break;
 
 	case '*':
-		bytecode->WriteByte(InstructionSet::OP_MULTIPLY);
+		if (lhs.GetType(context) == BlockContext::Type::Integer)
+		{
+			bytecode->WriteByte(InstructionSet::OP_MULTIPLY_INT);
+		}
+		else
+		{
+			bytecode->WriteByte(InstructionSet::OP_MULTIPLY_FLOAT);
+		}
 		break;
 
 	case '/':
-		bytecode->WriteByte(InstructionSet::OP_DIVIDE);
+		if (lhs.GetType(context) == BlockContext::Type::Integer)
+		{
+			bytecode->WriteByte(InstructionSet::OP_DIVIDE_INT);
+		}
+		else
+		{
+			bytecode->WriteByte(InstructionSet::OP_DIVIDE_FLOAT);
+		}
 		break;
 
 	default:
@@ -267,6 +313,9 @@ bool ASTIntegerNode::GenerateCode(BlockContext& context, ILByteCode* bytecode) c
 
 bool ASTDoubleNode::GenerateCode(BlockContext& context, ILByteCode* bytecode) const
 {
+	bytecode->WriteByte(InstructionSet::OP_STACK_LOAD_FLOAT);
+	bytecode->WriteFloat(_value);
+
 	return true;
 }
 

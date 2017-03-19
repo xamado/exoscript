@@ -3,9 +3,10 @@
 #include "util/Assert.h"
 
 BlockContext::BlockContext(BlockContext* parentContext)
-	: _parentContext(parentContext)
+	: _parentContext(parentContext), _variableCount(0)
 {
-
+	_types.insert(std::make_pair("int", Type::Integer));
+	_types.insert(std::make_pair("float", Type::Float));
 }
 
 BlockContext& BlockContext::PushContext()
@@ -15,27 +16,34 @@ BlockContext& BlockContext::PushContext()
 	return _subContexts[_subContexts.size() - 1];
 }
 
-void BlockContext::AddLocal(const std::string& id, const std::string& type)
+BlockContext::Type BlockContext::GetType(const std::string& name)
 {
-	_locals.push_back(id);
-}
-
-bool BlockContext::GetLocal(const std::string& name, uint8_t* const val)
-{
-	for (uint32_t i = 0; i < _locals.size(); i++)
+	auto i = _types.find(name);
+	if(i != _types.end())
 	{
-		if (_locals[i] == name)
-		{
-			ASSERT_FATAL(i >= 0 && i < UINT8_MAX, "BlockContext::GetLocal() -> local index is out of range\n");
-
-			*val = i;
-			return true;
-		}
+		return i->second;
 	}
 
-	printf("Variable not found in context: %s\n", name.c_str());
+	return Type::Invalid;
+}
 
-	return false;
+void BlockContext::AddVariable(BlockContext::ContextVariable& variable)
+{
+	variable.SetIndex(_variableCount++);
+
+	_variables.insert(std::make_pair(variable.GetName(), variable));
+}
+
+const BlockContext::ContextVariable* BlockContext::GetVariable(const std::string& name) const
+{
+	auto it = _variables.find(name);
+	if(it == _variables.end())
+	{
+		printf("Variable not found in context: %s\n", name.c_str());
+		return nullptr;
+	}
+
+	return &it->second;
 }
 
 void BlockContext::AddLabel(const std::string& name, uint32_t offset)

@@ -83,6 +83,7 @@ void VM::ExecuteByteCode(const ILByteCode* const bytecode)
 				
 				break;
 			}
+
 			case OP_STACK_LOAD_INT:
 			{
 				uint32_t val = 0;
@@ -93,7 +94,17 @@ void VM::ExecuteByteCode(const ILByteCode* const bytecode)
 				break;
 			}
 
-			case OP_ADD:
+			case OP_STACK_LOAD_FLOAT:
+			{
+				float val = 0;
+				ptr = ReadFloat(ptr, &val);
+
+				PushFloat(val);
+
+				break;
+			}
+
+			case OP_ADD_INT:
 			{
 				uint32_t a = Pop();
 				uint32_t b = Pop();
@@ -104,7 +115,7 @@ void VM::ExecuteByteCode(const ILByteCode* const bytecode)
 			}
 			break;
 
-			case OP_SUBSTRACT:
+			case OP_SUBSTRACT_INT:
 			{
 				uint32_t a = Pop();
 				uint32_t b = Pop();
@@ -115,7 +126,7 @@ void VM::ExecuteByteCode(const ILByteCode* const bytecode)
 			}
 			break;
 
-			case OP_MULTIPLY:
+			case OP_MULTIPLY_INT:
 			{
 				uint32_t a = Pop();
 				uint32_t b = Pop();
@@ -126,7 +137,7 @@ void VM::ExecuteByteCode(const ILByteCode* const bytecode)
 			}
 			break;
 
-			case OP_DIVIDE:
+			case OP_DIVIDE_INT:
 			{
 				uint32_t a = Pop();
 				uint32_t b = Pop();
@@ -136,6 +147,18 @@ void VM::ExecuteByteCode(const ILByteCode* const bytecode)
 				Push(c);
 			}
 			break;
+
+			case OP_ADD_FLOAT:
+			{
+				float a = PopFloat();
+				float b = PopFloat();
+
+				float c = a + b;
+
+				PushFloat(c);
+
+				break;
+			}
 
 			case OP_LOCAL_STORE:
 			{
@@ -188,6 +211,14 @@ uint8_t* VM::ReadInt(uint8_t* ptr, uint32_t* val)
 	return ptr + 4;
 }
 
+uint8_t* VM::ReadFloat(uint8_t* ptr, float* val)
+{
+	uint32_t v = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
+	*val = *(float*)(&v);
+
+	return ptr + 4;
+}
+
 uint8_t* VM::ReadMetadata(uint8_t* ptr)
 {
 	uint8_t metaType = 0;
@@ -236,4 +267,18 @@ uint32_t VM::Pop()
 	ASSERT_FATAL(_stackCounter > 0, "VM::Push() -> Stack is empty");
 
 	return _stack[--_stackCounter];
+}
+
+void VM::PushFloat(float value)
+{
+	uint32_t v = *((uint32_t*)&value);
+
+	Push(v);
+}
+
+float VM::PopFloat()
+{
+	uint32_t v = Pop();
+
+	return *((float*)&v);
 }

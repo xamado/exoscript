@@ -10,7 +10,8 @@ int main()
 
 	test(2, 2);
 
-	int z = 5;
+	float j = 5.0;
+	float z = j + 1.0;
 
 	print z;
 }

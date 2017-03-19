@@ -20,6 +20,8 @@ class ASTExpressionNode : public ASTNode
 {
 public:
 	virtual ~ASTExpressionNode() {}
+
+	virtual BlockContext::Type GetType(const BlockContext& context) const = 0;
 };
 
 class ASTStatementNode : public ASTNode
@@ -43,7 +45,7 @@ private:
 	const ASTExpressionNode& _expr;
 };
 
-class ASTIdentifierNode : public ASTNode
+class ASTIdentifierNode : public ASTExpressionNode
 {
 public:
 	ASTIdentifierNode(const std::string& name) 
@@ -57,6 +59,18 @@ public:
 	const std::string& GetName() const { return _name; }
 
 	bool GenerateCode(BlockContext& context, ILByteCode* bytecode) const override;
+	
+	BlockContext::Type GetType(const BlockContext& context) const override 
+	{ 
+		const BlockContext::ContextVariable* var = context.GetVariable(_name);
+		if(var == nullptr)
+		{
+			return BlockContext::Type::Invalid;
+		}
+
+		return var->GetType();
+	};
+
 private:
 	const std::string& _name;
 };
@@ -198,6 +212,12 @@ public:
 
 	bool GenerateCode(BlockContext& context, ILByteCode* bytecode) const override;
 
+	BlockContext::Type GetType(const BlockContext& context) const override
+	{ 
+		// TODO: Functions dont have a return type yet :)
+		return BlockContext::Type::Void;
+	};
+
 private:
 	const ASTIdentifierNode& _identifier;
 	const ASTFunctionArgumentsNode& _arguments;
@@ -239,6 +259,12 @@ public:
 
 	bool GenerateCode(BlockContext& context, ILByteCode* bytecode) const override;
 
+	BlockContext::Type GetType(const BlockContext& context) const override 
+	{ 
+		// TODO: Should lhs and rhs match? should we check that here?
+		return lhs.GetType(context); 
+	};
+
 private:
 	uint32_t op;
 	const ASTExpressionNode& lhs;
@@ -260,6 +286,11 @@ public:
 
 	bool GenerateCode(BlockContext& context, ILByteCode* bytecode) const override;
 
+	BlockContext::Type GetType(const BlockContext& context) const override 
+	{ 
+		return BlockContext::Type::Integer; 
+	}
+
 private:
 	uint32_t _value;
 };
@@ -278,6 +309,11 @@ public:
 	virtual ~ASTDoubleNode() {}
 
 	bool GenerateCode(BlockContext& context, ILByteCode* bytecode) const override;
+
+	BlockContext::Type GetType(const BlockContext& context) const override 
+	{ 
+		return BlockContext::Type::Float; 
+	};
 
 private:
 	double _value;

@@ -14,6 +14,7 @@ public:
 
 	void WriteByte(uint8_t v);
 	void WriteInt(uint32_t v);
+	void WriteFloat(float v);
 	void WriteString(const std::string& s);
 
 	bool IsValid() const { return _data.size() > 0; }

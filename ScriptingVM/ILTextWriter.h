@@ -15,6 +15,7 @@ public:
 
 	uint8_t ReadByte();
 	uint32_t ReadInt();
+	float ReadFloat();
 
 	void WriteMetadataHeader();
 	void WriteMetadataFunction();

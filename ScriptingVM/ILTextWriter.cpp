@@ -60,6 +60,15 @@ void ILTextWriter::WriteIL()
 				break;
 			}
 
+			case OP_STACK_LOAD_FLOAT:
+			{
+				float val = ReadFloat();
+
+				this->WriteOpCode(instruction, std::to_string(val));
+
+				break;
+			}
+
 			case OP_LOCAL_STORE:
 			{
 				uint8_t val = ReadByte();
@@ -92,10 +101,14 @@ void ILTextWriter::WriteIL()
 				break;
 
 			case OP_HALT:
-			case OP_ADD:
-			case OP_SUBSTRACT:
-			case OP_MULTIPLY:
-			case OP_DIVIDE:
+			case OP_ADD_INT:
+			case OP_SUBSTRACT_INT:
+			case OP_MULTIPLY_INT:
+			case OP_DIVIDE_INT:
+			case OP_ADD_FLOAT:
+			case OP_SUBSTRACT_FLOAT:
+			case OP_MULTIPLY_FLOAT:
+			case OP_DIVIDE_FLOAT:
 			case OP_PRINT:
 				this->WriteOpCode(instruction);
 
@@ -121,9 +134,19 @@ uint8_t ILTextWriter::ReadByte()
 uint32_t ILTextWriter::ReadInt()
 {
 	uint32_t v = (_ptr[0] << 24) | (_ptr[1] << 16) | (_ptr[2] << 8) | _ptr[3];
+	
 	_ptr += 4;
 
 	return v;
+}
+
+float ILTextWriter::ReadFloat()
+{
+	uint32_t v = (_ptr[0] << 24) | (_ptr[1] << 16) | (_ptr[2] << 8) | _ptr[3];
+	
+	_ptr += 4;
+
+	return *((float*)&v);
 }
 
 void ILTextWriter::WriteLineNumber()
